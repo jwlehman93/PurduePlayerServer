@@ -7,7 +7,7 @@ import java.util.*;
  * Created by jwlehman on 8/11/15.
  * Server class to handle request from the client android app
  */
-public class PlayerServer extends Thread {
+public class PlayerServer implements Runnable {
 
 
     private Socket serv;
@@ -65,27 +65,26 @@ public class PlayerServer extends Thread {
     public String analyzeRequest(String request, String username, String password, String args) throws IOException {
         f = new File("passwords.txt");
         if (request.equals("ADD-USER")) {
-            if(addUser(username, password))
+            if (addUser(username, password))
                 return "User successfully added";
             return "User was not added";
 
-        }
-        else if(request.equals("LOGIN")){
-            if(login(username,password))
+        } else if (request.equals("LOGIN")) {
+            if (login(username, password))
                 return "User is logged in";
             return "User was not logged in";
-        }
-        else
+        } else
             return "Request not recognized";
+
     }
 
     /*add user to server and passwords document
 
      */
     public boolean addUser(String username, String password) throws IOException {
-        User newUser = new User(username,password);
-        for(User user : allUsers) {
-            if(user.getName().equals(username))
+        User newUser = new User(username, password);
+        for (User user : allUsers) {
+            if (user.getName().equals(username))
                 return false;
         }
         FileOutputStream fos = new FileOutputStream(f);
@@ -93,7 +92,6 @@ public class PlayerServer extends Thread {
         pw.println(username + "-" + password);
         pw.close();
         allUsers.add(newUser);
-        login(username, password);
         return true;
     }
 
@@ -101,7 +99,7 @@ public class PlayerServer extends Thread {
 
      */
     public boolean login(String username, String password) {
-        if(!checkPassword(username,password)){
+        if (!checkPassword(username, password)) {
             return false;
         }
         User user = findUser(username);
@@ -110,14 +108,13 @@ public class PlayerServer extends Thread {
     }
 
     public User findUser(String username) {
-        for(User user : allUsers) {
+        for (User user : allUsers) {
             String check = user.getName();
             if (check.equals(username))
                 return user;
         }
         return null;
     }
-
 
 
     //check password match for username
@@ -127,62 +124,82 @@ public class PlayerServer extends Thread {
             if (user.getName().equals(username)) {
                 check = user;
                 break;
-            } }
+            }
+        }
         try {
             return check != null && check.getPassword().equals(password);
-        } catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    public void run() {
+    //initialize password list
+    public void initialize() {
+        String user;
+        String pass;
+        String delimited[];
         try {
-            while (true) {
-                System.out.println("Waiting for client...");
-                serv = serverSocket.accept();
-                sockets.add(serv);
-                System.out.println("Connected to " + serv.getRemoteSocketAddress());
-                PrintWriter out = new PrintWriter(serv.getOutputStream(),true);
-                BufferedReader in =  new BufferedReader(new InputStreamReader(serv.getInputStream()));
-                String clientInput = in.readLine();
-                System.out.println(clientInput);
-                String[] delimited = clientInput.split("-");
-                try {
-                    String request = delimited[0];
-                    String username = delimited[1];
-                    String password = delimited[2];
-                    String args = delimited[3];
-                    String answer = analyzeRequest(request,username,password,args);
-                    System.out.println(answer);
-                }
-                catch(ArrayIndexOutOfBoundsException e) {
-                    e.printStackTrace();
-                    out.println("Usage Error: Need more args");
-                    System.out.println("Not enough args");
-                }
+            Scanner in = new Scanner(f);
+            while (in.hasNextLine()) {
+                delimited = in.nextLine().split("-");
+                user = delimited[1];
+                pass = delimited[2];
+                addUser(user, pass);
 
             }
-        } catch (SocketTimeoutException ste) {
-            System.out.println("You took too long");
-            ste.printStackTrace();
+        } catch (FileNotFoundException fne) {
+            fne.printStackTrace();
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
 
     }
 
+    public void run() {
+        try {
+            System.out.println("Waiting for client...");
+            serv = serverSocket.accept();
+            sockets.add(serv);
+            System.out.println("Connected to " + serv.getRemoteSocketAddress());
+            PrintWriter out = new PrintWriter(serv.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(serv.getInputStream()));
+            String clientInput = in.readLine();
+            System.out.println(clientInput);
+            String[] delimited = clientInput.split("-");
+            in.close();
+
+
+            String request = delimited[0];
+            String username = delimited[1];
+            String password = delimited[2];
+            String args = delimited[3];
+            String answer = analyzeRequest(request, username, password, args);
+            System.out.println(answer);
+        } catch (SocketTimeoutException ste) {
+            System.out.println("You took too long");
+            ste.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            e.printStackTrace();
+            out.println("Usage Error: Need more args");
+            System.out.println("Not enough args");
+        }
+    }
+
+}
+
     public static void main(String[] args) {
-        Thread t;
         int portNum;
         try {
             if(args.length>0) {
                 portNum = Integer.parseInt(args[1]);
-                t = new PlayerServer(portNum);
+                new Thread(new PlayerServer(portNum)).start();
             }
             else
-                t = new PlayerServer();
-            t.start();
+                new Thread(new PlayerServer().start());
         }catch(Exception e){
             e.printStackTrace();
         }
