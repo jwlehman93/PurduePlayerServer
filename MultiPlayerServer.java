@@ -7,7 +7,7 @@ import java.util.*;
  * Created by jwlehman on 8/11/15.
  * Server class to handle request from the client android app
  */
-public class PlayerServer implements Runnable {
+public class MultiPlayerServer implements Runnable {
 
 
     private Socket serv;
@@ -22,7 +22,7 @@ public class PlayerServer implements Runnable {
      *creates serversocket
      */
 
-    public PlayerServer(int port) throws IOException {
+    public MultiPlayerServer(int port) throws IOException {
         sockets = new ArrayList<>();
         allUsers = new ArrayList<>();
         activeUsers = new ArrayList<>();
@@ -38,13 +38,13 @@ public class PlayerServer implements Runnable {
      *creates serversocket
      */
 
-    public PlayerServer() throws IOException {
+    public MultiPlayerServer() throws IOException {
         sockets = new ArrayList<>();
         allUsers = new ArrayList<>();
         activeUsers = new ArrayList<>();
         //create random port
         int range = (65534 - 1025) + 1;
-        int port = (int) Math.random() * range + 1025;
+        int port = (int) (Math.random() * range + 1025);
         serverSocket = new ServerSocket(port);
         System.out.println("Server is bound to port " + port);
         serverSocket.setReuseAddress(true);
@@ -101,6 +101,7 @@ public class PlayerServer implements Runnable {
     public boolean login(String username, String password) {
         if (!checkPassword(username, password)) {
             return false;
+
         }
         User user = findUser(username);
         activeUsers.add(user);
@@ -184,22 +185,20 @@ public class PlayerServer implements Runnable {
         }
         catch (ArrayIndexOutOfBoundsException e) {
             e.printStackTrace();
-            out.println("Usage Error: Need more args");
             System.out.println("Not enough args");
         }
     }
 
-}
 
     public static void main(String[] args) {
         int portNum;
         try {
             if(args.length>0) {
                 portNum = Integer.parseInt(args[1]);
-                new Thread(new PlayerServer(portNum)).start();
+                new Thread(new MultiPlayerServer(portNum)).start();
             }
             else
-                new Thread(new PlayerServer().start());
+                new Thread(new MultiPlayerServer().start());
         }catch(Exception e){
             e.printStackTrace();
         }
