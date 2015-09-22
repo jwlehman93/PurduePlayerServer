@@ -5,17 +5,18 @@ import java.util.*;
 
 /**
  * Created by jwlehman on 8/11/15.
- * Server class to handle request from the client android app
+ * MultiThreaded Server class to handle request from the client android app
  */
 public class MultiPlayerServer implements Runnable {
 
 
-    private Socket serv;
     private ServerSocket serverSocket;
     private ArrayList<Socket> sockets;
     private ArrayList<User> allUsers;
     private ArrayList<User> activeUsers;
-    File f;
+    private Socket serv;
+    private File f;
+    private int port;
 
     /*constructor if a particular port is specified
      *initialized users,sockets arraylists
@@ -26,10 +27,7 @@ public class MultiPlayerServer implements Runnable {
         sockets = new ArrayList<>();
         allUsers = new ArrayList<>();
         activeUsers = new ArrayList<>();
-        serverSocket = new ServerSocket(port);
-        System.out.println("Server is bound to port " + port);
-        serverSocket.setReuseAddress(true);
-        serverSocket.setSoTimeout(30000);
+        this.port = port;
     }
 
 
@@ -56,6 +54,13 @@ public class MultiPlayerServer implements Runnable {
         return serverSocket.getLocalPort();
     }
 
+    public ServerSocket getServerSocket() {
+        return serverSocket;
+    }
+
+    public void setServ(Socket socket) {
+        serv = socket;
+    }
     //TODO implement methods for different request
 
 
@@ -159,10 +164,6 @@ public class MultiPlayerServer implements Runnable {
 
     public void run() {
         try {
-            System.out.println("Waiting for client...");
-            serv = serverSocket.accept();
-            sockets.add(serv);
-            System.out.println("Connected to " + serv.getRemoteSocketAddress());
             PrintWriter out = new PrintWriter(serv.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(serv.getInputStream()));
             String clientInput = in.readLine();
@@ -192,16 +193,29 @@ public class MultiPlayerServer implements Runnable {
 
     public static void main(String[] args) {
         int portNum;
+        MultiPlayerServer mps;
         try {
-            if(args.length>0) {
-                portNum = Integer.parseInt(args[1]);
-                new Thread(new MultiPlayerServer(portNum)).start();
+
+                if(args.length>0) {
+                    portNum = Integer.parseInt(args[1]);
+                    mps = new MultiPlayerServer(portNum);
+                }
+                else {
+                    mps = new MultiPlayerServer();
+                }
+            System.out.println("Waiting for client...");
+            while(true) {
+                Socket serv = mps.getServerSocket().accept();
+                mps.setServ(serv);
+                System.out.println("Connected to " + serv.getRemoteSocketAddress());
+                new Thread(mps.start());
+
+
             }
-            else
-                new Thread(new MultiPlayerServer().start());
+
+
         }catch(Exception e){
             e.printStackTrace();
         }
-
     }
 }
