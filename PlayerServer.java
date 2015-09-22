@@ -2,11 +2,12 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+
 /**
  * Created by jwlehman on 8/11/15.
  * Server class to handle request from the client android app
  */
-public class PurduePlayerServer extends Thread {
+public class PlayerServer extends Thread {
 
 
     private Socket serv;
@@ -21,7 +22,7 @@ public class PurduePlayerServer extends Thread {
      *creates serversocket
      */
 
-    public PurduePlayerServer(int port) throws IOException {
+    public PlayerServer(int port) throws IOException {
         sockets = new ArrayList<>();
         allUsers = new ArrayList<>();
         activeUsers = new ArrayList<>();
@@ -37,7 +38,7 @@ public class PurduePlayerServer extends Thread {
      *creates serversocket
      */
 
-    public PurduePlayerServer() throws IOException {
+    public PlayerServer() throws IOException {
         sockets = new ArrayList<>();
         allUsers = new ArrayList<>();
         activeUsers = new ArrayList<>();
@@ -47,7 +48,7 @@ public class PurduePlayerServer extends Thread {
         serverSocket = new ServerSocket(port);
         System.out.println("Server is bound to port " + port);
         serverSocket.setReuseAddress(true);
-        serverSocket.setSoTimeout(30000);
+        serverSocket.setSoTimeout(300000);
     }
 
     //getter for local port
@@ -92,7 +93,7 @@ public class PurduePlayerServer extends Thread {
         pw.println(username + "-" + password);
         pw.close();
         allUsers.add(newUser);
-        login(username,password);
+        login(username, password);
         return true;
     }
 
@@ -145,14 +146,26 @@ public class PurduePlayerServer extends Thread {
                 PrintWriter out = new PrintWriter(serv.getOutputStream(),true);
                 BufferedReader in =  new BufferedReader(new InputStreamReader(serv.getInputStream()));
                 String clientInput = in.readLine();
+                System.out.println(clientInput);
                 String[] delimited = clientInput.split("-");
-                String request = delimited[0];
-                String username = delimited[1];
-                String password = delimited[2];
-                String args = delimited[3];
-                String answer = analyzeRequest(request,username,password,args);
-                out.println(answer);
+                try {
+                    String request = delimited[0];
+                    String username = delimited[1];
+                    String password = delimited[2];
+                    String args = delimited[3];
+                    String answer = analyzeRequest(request,username,password,args);
+                    System.out.println(answer);
+                }
+                catch(ArrayIndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                    out.println("Usage Error: Need more args");
+                    System.out.println("Not enough args");
+                }
+
             }
+        } catch (SocketTimeoutException ste) {
+            System.out.println("You took too long");
+            ste.printStackTrace();
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -165,10 +178,10 @@ public class PurduePlayerServer extends Thread {
         try {
             if(args.length>0) {
                 portNum = Integer.parseInt(args[1]);
-                t = new PurduePlayerServer(portNum);
+                t = new PlayerServer(portNum);
             }
             else
-                t = new PurduePlayerServer();
+                t = new PlayerServer();
             t.start();
         }catch(Exception e){
             e.printStackTrace();
