@@ -1,6 +1,30 @@
 /**
- * Created by Jeremy on 9/21/2015.
+ * Created by jwlehman on 8/25/15.
  */
-public class Player {
+public class User {
+    private String name;
+    private String password;
+
+    public User(String name, String password) {
+        this.name = name;
+        this.password = password;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
 
 }
